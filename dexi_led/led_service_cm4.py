@@ -6,6 +6,7 @@ import neopixel
 import threading
 import time
 from enum import Enum
+import colorsys
 
 from adafruit_led_animation.animation.solid import Solid
 from adafruit_led_animation.color import (
@@ -283,7 +284,103 @@ class LEDService(Node):
                 self.pixels[i] = color  # Set current LED to green
                 self.pixels.show()
                 time.sleep(delay)
+                
+    def gradient_effect(self):
+        """Creates a gradient effect"""
+        hue_increment = 0.01
+        hue = 0.0
+        delay = 0.025
 
+        while self.effect_running: 
+            r, g, b = colorsys.hsv_to_rgb(hue, 1.0, 1.0)
+            color = (int(r*255), int(g*255), int(b*255))
+
+            self.pixels.fill(color)
+            self.pixels.show()
+
+            hue += hue_increment   
+            hue %= 1.0            
+
+            time.sleep(delay)
+
+    def wave_effect(self):
+        """Creates a wave the propagates from the center"""
+        delay = 0.05
+        colors = [
+            red,      # Red
+            orange,   # Orange
+            yellow,   # Yellow
+            green,    # Green
+            blue,     # Blue
+            (75, 0, 130),   # Indigo
+            purple    # Violet
+        ]
+
+        while self.effect_running:
+            for i in range(len(colors)):
+                for j in range((self.num_pixels // 2) + 1): 
+                    if not self.effect_running:
+                        break   
+
+                    self.pixels[j] = colors[i]
+                    if not j == 0:
+                        self.pixels[self.num_pixels - j] = colors[i]
+                    
+                    self.pixels.show()
+                    time.sleep(delay)
+                
+
+    def snake_effect(self):
+        """Creates a gradient snake effect"""
+        hue_increment = 0.00667
+        hue = 0.0
+        delay = 0.035
+        
+        while self.effect_running:
+            for i in range(self.num_pixels):
+                if not self.effect_running:
+                    break
+                r, g, b = colorsys.hsv_to_rgb(hue, 1.0, 1.0)
+                color = (int(r*255), int(g*255), int(b*255))
+
+                self.pixels[i] = color
+                self.pixels.show()
+
+                hue += hue_increment   
+                hue %= 1.0            
+
+                time.sleep(delay)
+
+    def festive_effect(self):
+        """Creates alterating festive lights"""
+        delay = 0.4
+        ring_state_even = []
+        ring_state_odd = []
+        colors = [
+            green,
+            red
+        ]
+        
+        for i in range(self.num_pixels):
+            if (i // 2) % 2 == 0: ring_state_even.append(colors[0])
+            else: ring_state_even.append(colors[1])
+
+        ring_state_odd = ring_state_even[2:] + ring_state_even[:2]
+
+        while self.effect_running:
+            self.pixels[:] = ring_state_even
+            self.pixels.show()
+
+            time.sleep(delay)
+
+            if not self.effect_running:
+                break
+
+            self.pixels[:] = ring_state_odd
+            self.pixels.show()
+
+            time.sleep(delay)
+            
     def stop_current_effect(self):
         self.effect_running = False
         if self.effect_thread is not None:
@@ -305,6 +402,34 @@ class LEDService(Node):
                 self.get_logger().info("Started rainbow effect")
                 response.success = True
                 response.message = "Successfully started rainbow effect"
+            elif request.effect_name.lower() == 'gradient':
+                self.effect_running = True
+                self.effect_thread = threading.Thread(target=self.gradient_effect)
+                self.effect_thread.start()
+                self.get_logger().info("Started gradient effect")
+                response.success = True
+                response.message = "Successfully started gradient effect"
+            elif request.effect_name.lower() == 'wave':
+                self.effect_running = True
+                self.effect_thread = threading.Thread(target=self.wave_effect)
+                self.effect_thread.start()
+                self.get_logger().info("Started wave effect")
+                response.success = True
+                response.message = "Successfully started wave effect"
+            elif request.effect_name.lower() == 'snake':
+                self.effect_running = True
+                self.effect_thread = threading.Thread(target=self.snake_effect)
+                self.effect_thread.start()
+                self.get_logger().info("Started snake effect")
+                response.success = True
+                response.message = "Successfully started snake effect" 
+            elif request.effect_name.lower() == 'festive':
+                self.effect_running = True
+                self.effect_thread = threading.Thread(target=self.festive_effect)
+                self.effect_thread.start()
+                self.get_logger().info("Started festive effect")
+                response.success = True
+                response.message = "Successfully started festive effect"
             elif request.effect_name.lower() == 'meteor':
                 self.effect_running = True
                 self.effect_thread = threading.Thread(target=self.meteor_effect)
